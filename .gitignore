@@ -1,0 +1,120 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyk
+*.so
+
+# C extensions
+*.c
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist
+var/
+wheels/
+share/python1.*/site-packages
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  See http://www.pyinstaller.org/manual/running.html#running-pyinstaller-under-windows
+*.spec
+*.exe
+*.dll
+*.lib
+*.a
+*.pyd
+*.pyz
+
+# Logs
+*.log
+*.log.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pids/
+*.pid
+*.pid.*
+*.service
+
+# Runtime data
+.pyc
+*.sqlite3
+*.sqlite3-journal
+
+# User data
+# SageMath cloud storage data - https://github.com/sagemath/sage-notebook/blob/master/SAGE_ROOT/build/pkgs/sagenb/SPKG/dist/src/setup.py#L546
+.sagemathcloud
+
+# Tests
+.tox
+*.egg-info/
+*.coverage
+*.coverager.*
+*.cache
+nosetests.xml
+coverage.xml
+*.py,cover
+htmlcov/
+*.mo
+*.pyc
+
+# Translations
+*.mo
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance
+web.config
+*.log
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build
+docs/autosummary
+docs/*.inv
+docs/*.dox
+docs/*.rst
+docs/*.so
+docs/*.html
+docs/*.pdf
+docs/*.epub
+docs/*.pickle
+docs/*.py
+docs/*.js
+docs/*.css
+docs/*.png
+docs/*.gif
+docs/*.txt
+docs/*.json
+
+# Testing
+*.pytest_cache
+.tox
+.nox
+coverage.xml
+*.coverager
+*.coverage
+*.cache
+nosetests.xml
+
+# Python build directory
+__pycache__/
