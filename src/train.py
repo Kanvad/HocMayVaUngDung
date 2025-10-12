@@ -1,5 +1,3 @@
-# src/train.py
-
 import pandas as pd
 import numpy as np
 import joblib
@@ -12,6 +10,11 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
+from scipy.stats import linregress
+
+# ĐẶT RANDOM SEED ĐỂ ĐẢM BẢO TÍNH TÁI LẬP
+RANDOM_SEED = 42
+np.random.seed(RANDOM_SEED) # Đặt seed cho NumPy
 
 # 1. Load file data
 FILE_PATH = 'data/processed/ssense_clean.csv'
@@ -40,7 +43,7 @@ X['type'] = X['type'].astype(str).fillna('Unknown')
 
 # Chia tập dữ liệu (60/40)
 # test_size=0.4 (40%), train_size=0.6 (60%)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=RANDOM_SEED)
 print(f"Kích thước tập Train: {len(X_train)} | Kích thước tập Test: {len(X_test)}")
 
 # ----------------------------------------------------
@@ -51,15 +54,12 @@ print(f"Kích thước tập Train: {len(X_train)} | Kích thước tập Test: 
 text_features = 'description'
 categorical_features = ['brand', 'type']
 
-# Tạo Transformer cho Text (TF-IDF) và Categorical (One-Hot Encoding)
 preprocessor = ColumnTransformer(
     transformers=[
-        # Vectorize cột text (description) → TF-IDF
         ('text_vec', TfidfVectorizer(max_features=5000), text_features), 
-        # Encode cột category (brand, type)
         ('cat_ohe', OneHotEncoder(handle_unknown='ignore'), categorical_features)
     ],
-    remainder='drop' # Chỉ giữ lại các cột đã được định nghĩa
+    remainder='drop'
 )
 
 # ----------------------------------------------------
@@ -77,13 +77,21 @@ model_pipeline.fit(X_train, y_train)
 print("Huấn luyện hoàn tất.")
 
 # Dự đoán trên tập Test
-y_pred = model_pipeline.predict(X_test)
+y_pred_raw = model_pipeline.predict(X_test)
+
+# Áp dụng điều kiện lấy số dương
+# Thay thế mọi giá trị âm bằng 0.
+y_pred = np.maximum(0, y_pred_raw) 
+print("Đã áp dụng điều kiện: Giá dự đoán sẽ không thấp hơn 0.")
 
 # Tính R², MAE, MSE
+# ... (Phần tính metrics tiếp theo sử dụng y_pred đã được sửa)
+
 r2 = r2_score(y_test, y_pred)
 mae = mean_absolute_error(y_test, y_pred)
 mse = mean_squared_error(y_test, y_pred)
 rmse = np.sqrt(mse)
+
 
 print("\n--- Kết quả Đánh giá Mô hình (trên tập Test) ---")
 print(f"R-squared (R²): {r2:.4f}")
@@ -122,26 +130,47 @@ print(f"\nĐã lưu mô hình Pipeline vào: {model_filename}")
 
 # Vẽ biểu đồ Actual vs Predicted
 plt.figure(figsize=(10, 6))
+
 # Lấy mẫu để biểu đồ không bị quá tải
 sample_size = min(500, len(y_test))
 sample_indices = np.random.choice(len(y_test), size=sample_size, replace=False)
 y_test_sample = y_test.iloc[sample_indices]
-y_pred_sample = y_pred[sample_indices]
+y_pred_sample = y_pred[sample_indices] # y_pred đã được đảm bảo >= 0
 
+# 1. Vẽ các điểm dữ liệu
 plt.scatter(y_test_sample, y_pred_sample, alpha=0.5)
-plt.plot([y_test_sample.min(), y_test_sample.max()], [y_test_sample.min(), y_test_sample.max()], 'r--', lw=2, label='Đường lý tưởng (y=x)')
+
+# 2. VẼ ĐƯỜNG LÝ TƯỞNG (Y=X)
+min_val = y_test_sample.min()
+max_val = y_test_sample.max()
+
+# 3. VẼ ĐƯỜNG HỒI QUY TRÊN DỮ LIỆU DỰ ĐOÁN 
+slope, intercept, r_value, p_value, std_err = linregress(y_test_sample, y_pred_sample)
+
+# Tạo tọa độ cho đường hồi quy
+X_line = np.linspace(y_test_sample.min(), y_test_sample.max(), 100)
+Y_line_reg = slope * X_line + intercept
+
+# Vẽ biểu đồ
+plt.figure(figsize=(10, 6))
+plt.scatter(y_test_sample, y_pred_sample, alpha=0.5, label='Điểm dữ liệu (Giá thực tế vs Dự đoán)')
+
+min_val = y_test_sample.min()
+max_val = y_test_sample.max()
+plt.plot([min_val, max_val], [min_val, max_val], 'r--', lw=2, label='Đường lý tưởng (y=x)')
+plt.plot(X_line, Y_line_reg, color='green', linestyle='-', lw=2, label=f'Đường Hồi quy (y={slope:.2f}x + {intercept:.2f})')
+         
 plt.xlabel("Giá thực tế (Actual Price - USD)")
 plt.ylabel("Giá dự đoán (Predicted Price - USD)")
 plt.title("Biểu đồ Giá thực tế so với Giá dự đoán (Tập Test)")
 plt.legend()
 
-# Lưu biểu đồ vào thư mục 'results'
 if not os.path.exists('results'):
     os.makedirs('results')
-plot_filename = 'results/actual_vs_predicted_usd.png'
+plot_filename = 'results/actual_vs_predicted_usd_with_regression.png'
 plt.savefig(plot_filename)
 plt.close()
-print(f"Đã lưu biểu đồ Actual vs Predicted vào: {plot_filename}")
+print(f"Đã lưu biểu đồ Actual vs Predicted với đường hồi quy vào: {plot_filename}")
 
 # Số liệu kết quả dự đoán
 results = {
